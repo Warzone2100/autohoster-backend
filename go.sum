@@ -1,5 +1,7 @@
 github.com/maxsupermanhd/go-wz v0.0.0-20230820232257-04d1891e10e7 h1:stif4eaJAt0b0RGyROkgg9qMP8HcpChd/Ll8vZNYVzo=
 github.com/maxsupermanhd/go-wz v0.0.0-20230820232257-04d1891e10e7/go.mod h1:whdCX9KN3xvh/5yaNYiQgC63suBBh6chAAbzNtspCas=
+github.com/maxsupermanhd/go-wz v0.0.0-20240121163618-c14dfcaf5b68 h1:X+CPDjM41ajxcwv176J3ROvNIp6oD+ReW1bhCj+m388=
+github.com/maxsupermanhd/go-wz v0.0.0-20240121163618-c14dfcaf5b68/go.mod h1:whdCX9KN3xvh/5yaNYiQgC63suBBh6chAAbzNtspCas=
 github.com/maxsupermanhd/lac v0.0.0-20231215204409-2979b44ca944 h1:K8FWuL3obIWNj6sxoy67UGbqy+6LCDvuzl3lvLjPeNY=
 github.com/maxsupermanhd/lac v0.0.0-20231215204409-2979b44ca944/go.mod h1:xQezeA7Tf0qvyr6DuOjmBJTcAyM9RS7cUKxOlnQLZKo=
 github.com/mitchellh/mapstructure v1.5.0 h1:jeMsZIYE/09sWLaz43PL7Gy6RuMjD2eJVyuac5Z2hdY=
