@@ -2,11 +2,10 @@ package main
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"strings"
 	"time"
-
-	autohosterdb "github.com/Warzone2100/autohoster-db"
 )
 
 type hosterMessageMatchType int
@@ -308,11 +307,25 @@ func messageHandlerProcessChat(inst *instance, msg string) bool {
 			"Event ID: %s", ecode)
 		instWriteFmt(inst, "ban ip %s %s", msgip, reason)
 	}
-	err = autohosterdb.AddChatLog(context.Background(), dbpool, msgip, string(msgname), msgpubkey, string(msgcontent))
+	err = addChatLog(msgip, string(msgname), msgpubkey, string(msgcontent))
 	if err != nil {
 		inst.logger.Printf("Failed to log chat: %s", err.Error())
 	}
 	return false
+}
+
+func addChatLog(ip string, name string, pkey []byte, msg string) error {
+	tag, err := dbpool.Exec(context.Background(), `INSERT INTO chatlog (ip, name, pkey, msg) VALUES ($1, $2, $3, $4)`, ip, name, pkey, msg)
+	if err != nil {
+		return err
+	}
+	if !tag.Insert() {
+		return errors.New("not insert return tag")
+	}
+	if tag.RowsAffected() != 1 {
+		return errors.New("rows affected != 1")
+	}
+	return nil
 }
 
 func processHosterMessage(inst *instance, msg string) bool {

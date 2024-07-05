@@ -13,8 +13,6 @@ import (
 	"sync"
 	"syscall"
 	"time"
-
-	autohosterdb "github.com/Warzone2100/autohoster-db"
 )
 
 var (
@@ -277,8 +275,22 @@ msgloop:
 func DbLogAction(f string, args ...any) (string, error) {
 	ecode := "A-" + genRandomString(14)
 	msg := ecode + " " + fmt.Sprintf(f, args...)
-	err := autohosterdb.AddEventLog(context.Background(), dbpool, msg)
+	err := addEventLog(msg)
 	return ecode, err
+}
+
+func addEventLog(msg string) error {
+	tag, err := dbpool.Exec(context.Background(), `insert into eventlog (msg) values ($1)`, msg)
+	if err != nil {
+		return err
+	}
+	if !tag.Insert() {
+		return errors.New("not insert return tag")
+	}
+	if tag.RowsAffected() != 1 {
+		return errors.New("rows affected != 1")
+	}
+	return nil
 }
 
 func instWriteFmt(inst *instance, format string, args ...any) {
