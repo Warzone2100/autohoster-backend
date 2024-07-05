@@ -4,17 +4,13 @@ go 1.22.3
 
 toolchain go1.22.4
 
-replace github.com/Warzone2100/autohoster-db => /home/max/p/autohoster-db
-
 require (
-	github.com/Warzone2100/autohoster-db v0.0.0-20240608154401-ea9932ccc021
 	github.com/jackc/pgx/v4 v4.18.3
 	github.com/maxsupermanhd/go-wz v0.0.0-20240121163618-c14dfcaf5b68
 	github.com/maxsupermanhd/lac/v2 v2.0.0-20240629122957-f72b94d89182
 )
 
 require (
-	github.com/georgysavva/scany v1.2.2 // indirect
 	github.com/jackc/chunkreader/v2 v2.0.1 // indirect
 	github.com/jackc/pgconn v1.14.3 // indirect
 	github.com/jackc/pgio v1.0.0 // indirect
