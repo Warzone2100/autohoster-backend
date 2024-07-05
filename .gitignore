@@ -1,2 +1,4 @@
 autohoster-backend
 config.json
+run/
+logs/
