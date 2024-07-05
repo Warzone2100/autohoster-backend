@@ -2,3 +2,4 @@ autohoster-backend
 config.json
 run/
 logs/
+ISPcache.json
