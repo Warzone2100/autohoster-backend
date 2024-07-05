@@ -1,6 +1,7 @@
 package main
 
 import (
+	gamereport "autohoster-backend/gameReport"
 	"context"
 	"encoding/base64"
 	"encoding/json"
@@ -37,7 +38,7 @@ func submitFinalReport(inst *instance, reportBytes []byte) {
 }
 
 func submitBegin(inst *instance, reportBytes []byte) int {
-	report := gameReport{}
+	report := gamereport.GameReport{}
 	err := json.Unmarshal(reportBytes, &report)
 	if err != nil {
 		inst.logger.Printf("Failed to unmarshal game report: %s report was %q", err.Error(), string(reportBytes))
@@ -69,7 +70,7 @@ func submitBegin(inst *instance, reportBytes []byte) int {
 				return err
 			}
 			_, err = tx.Exec(ctx, `insert into players (game, identity, position, team, color, props) values
-				($1, $2, $3, $4, $5, $6)`, gid, pid, v.Position, v.Team, v.Color, v.gameReportPlayerStatistics)
+				($1, $2, $3, $4, $5, $6)`, gid, pid, v.Position, v.Team, v.Color, v.GameReportPlayerStatistics)
 			if err != nil {
 				return err
 			}
@@ -89,13 +90,13 @@ func submitBegin(inst *instance, reportBytes []byte) int {
 }
 
 func submitFrame(inst *instance, reportBytes []byte) {
-	report := gameReport{}
+	report := gamereport.GameReport{}
 	err := json.Unmarshal(reportBytes, &report)
 	if err != nil {
 		inst.logger.Printf("Failed to unmarshal game report: %s (gid %d) report was %q", err.Error(), inst.GameId, string(reportBytes))
 		return
 	}
-	frame := gameReportGraphFrame{
+	frame := gamereport.GameReportGraphFrame{
 		GameTime:                  report.GameTime,
 		Kills:                     make([]int, len(report.PlayerData)),
 		Power:                     make([]int, len(report.PlayerData)),
@@ -151,7 +152,7 @@ func submitFrame(inst *instance, reportBytes []byte) {
 
 func submitEnd(inst *instance, reportBytes []byte) {
 	submitFrame(inst, reportBytes)
-	report := gameReportExtended{}
+	report := gamereport.GameReportExtended{}
 	err := json.Unmarshal(reportBytes, &report)
 	if err != nil {
 		inst.logger.Printf("Failed to unmarshal game report: %s (gid %d) report was %q", err.Error(), inst.GameId, string(reportBytes))
@@ -160,21 +161,21 @@ func submitEnd(inst *instance, reportBytes []byte) {
 	err = dbpool.BeginFunc(context.Background(), func(tx pgx.Tx) error {
 		for _, v := range report.PlayerData {
 			_, err := dbpool.Exec(context.Background(), `update players set usertype = $1, props = $2 where game = $3 and position = $4`,
-				v.Usertype, v.gameReportPlayerStatistics, inst.GameId, v.Position)
+				v.Usertype, v.GameReportPlayerStatistics, inst.GameId, v.Position)
 			if err != nil {
 				inst.logger.Printf("Failed to finalize player at position %d: %s (gid %d)", v.Position, err.Error(), inst.GameId)
 				return err
 			}
 		}
-		return nil
+		_, err = dbpool.Exec(context.Background(), `update games set research_log = $1, time_ended = TO_TIMESTAMP($2::double precision / 1000), debug_triggered = $3, game_time = $4 where id = $5`,
+			report.ResearchComplete, report.EndDate, inst.DebugTriggered, report.GameTime, inst.GameId)
+		if err != nil {
+			inst.logger.Printf("Failed to finalize game: %s (gid %d)", err.Error(), inst.GameId)
+		}
+		return err
 	})
 	if err != nil {
-		inst.logger.Printf("Failed to finalize players: %s (gid %d)", err.Error(), inst.GameId)
-	}
-	_, err = dbpool.Exec(context.Background(), `update games set research_log = $1, time_ended = TO_TIMESTAMP($2::double precision / 1000), debug_triggered = $3, game_time = $4 where id = $5`,
-		report.ResearchComplete, report.EndDate, inst.DebugTriggered, report.GameTime, inst.GameId)
-	if err != nil {
-		inst.logger.Printf("Failed to finalize game: %s (gid %d)", err.Error(), inst.GameId)
+		inst.logger.Printf("Failed to finalize: %s (gid %d)", err.Error(), inst.GameId)
 	}
 }
 
@@ -262,115 +263,4 @@ func getStorageReplayFilename(gid int) string {
 		num = string(v) + num
 	}
 	return string(num[len(num)-1:])
-}
-
-type gameReport struct {
-	JSONversion int `json:"JSONversion"`
-	Game        struct {
-		AlliancesType  int    `json:"alliancesType"`
-		BaseType       int    `json:"baseType"`
-		GameLimit      int    `json:"gameLimit"`
-		IdleTime       int    `json:"idleTime"`
-		MapName        string `json:"mapName"`
-		MaxPlayers     int    `json:"maxPlayers"`
-		Mods           string `json:"mods"`
-		MultiTechLevel int    `json:"multiTechLevel"`
-		PowerType      int    `json:"powerType"`
-		Scavengers     int    `json:"scavengers"`
-		StartDate      int64  `json:"startDate"`
-		Version        string `json:"version"`
-	} `json:"game"`
-	GameTime   int                    `json:"gameTime"`
-	PlayerData []gameReportPlayerData `json:"playerData"`
-}
-
-type gameReportExtended struct {
-	JSONversion int   `json:"JSONversion"`
-	EndDate     int64 `json:"endDate"`
-	Game        struct {
-		AlliancesType  int    `json:"alliancesType"`
-		BaseType       int    `json:"baseType"`
-		GameLimit      int    `json:"gameLimit"`
-		IdleTime       int    `json:"idleTime"`
-		MapName        string `json:"mapName"`
-		MaxPlayers     int    `json:"maxPlayers"`
-		Mods           string `json:"mods"`
-		MultiTechLevel int    `json:"multiTechLevel"`
-		PowerType      int    `json:"powerType"`
-		Scavengers     int    `json:"scavengers"`
-		StartDate      int64  `json:"startDate"`
-		TimeGameEnd    int    `json:"timeGameEnd"`
-		Timeout        bool   `json:"timeout"`
-		Version        string `json:"version"`
-	} `json:"game"`
-	GameTime         int                    `json:"gameTime"`
-	PlayerData       []gameReportPlayerData `json:"playerData"`
-	ResearchComplete []struct {
-		Name     string `json:"name"`
-		Position int    `json:"position"`
-		Struct   int    `json:"struct"`
-		Time     int    `json:"time"`
-	} `json:"researchComplete"`
-}
-
-type gameReportGraphFrame struct {
-	GameTime int `json:"gameTime"`
-
-	Kills                     []int `json:"kills"`
-	Power                     []int `json:"power"`
-	Score                     []int `json:"score"`
-	Droids                    []int `json:"droids"`
-	DroidsBuilt               []int `json:"droidsBuilt"`
-	DroidsLost                []int `json:"droidsLost"`
-	Hp                        []int `json:"hp"`
-	Structs                   []int `json:"structs"`
-	StructuresBuilt           []int `json:"structuresBuilt"`
-	StructuresLost            []int `json:"structuresLost"`
-	StructureKills            []int `json:"structureKills"`
-	SummExp                   []int `json:"summExp"`
-	OilRigs                   []int `json:"oilRigs"`
-	ResearchComplete          []int `json:"researchComplete"`
-	RecentPowerLost           []int `json:"recentPowerLost"`
-	RecentPowerWon            []int `json:"recentPowerWon"`
-	RecentResearchPerformance []int `json:"recentResearchPerformance"`
-	RecentResearchPotential   []int `json:"recentResearchPotential"`
-
-	RecentDroidPowerLost     []int `json:"recentDroidPowerLost"`
-	RecentStructurePowerLost []int `json:"recentStructurePowerLost"`
-}
-
-type gameReportPlayerStatistics struct {
-	Kills                     int `json:"kills"`
-	Power                     int `json:"power"`
-	Score                     int `json:"score"`
-	Droids                    int `json:"droids"`
-	DroidsBuilt               int `json:"droidsBuilt"`
-	DroidsLost                int `json:"droidsLost"`
-	Hp                        int `json:"hp"`
-	Structs                   int `json:"structs"`
-	StructuresBuilt           int `json:"structuresBuilt"`
-	StructuresLost            int `json:"structuresLost"`
-	StructureKills            int `json:"structureKills"`
-	SummExp                   int `json:"summExp"`
-	OilRigs                   int `json:"oilRigs"`
-	ResearchComplete          int `json:"researchComplete"`
-	RecentPowerLost           int `json:"recentPowerLost"`
-	RecentPowerWon            int `json:"recentPowerWon"`
-	RecentResearchPerformance int `json:"recentResearchPerformance"`
-	RecentResearchPotential   int `json:"recentResearchPotential"`
-
-	RecentDroidPowerLost     int `json:"recentDroidPowerLost"`
-	RecentStructurePowerLost int `json:"recentStructurePowerLost"`
-}
-
-type gameReportPlayerData struct {
-	Index     int    `json:"index"`
-	Position  int    `json:"position"`
-	Name      string `json:"name"`
-	PublicKey string `json:"publicKey"`
-	Team      int    `json:"team"`
-	Usertype  string `json:"usertype"`
-	Color     int    `json:"colour"`
-	Faction   int    `json:"faction"`
-	gameReportPlayerStatistics
 }
