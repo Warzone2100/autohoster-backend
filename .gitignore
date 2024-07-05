@@ -3,3 +3,6 @@ config.json
 run/
 logs/
 ISPcache.json
+.timetracker
+*.bak
+*.diff
