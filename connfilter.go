@@ -84,7 +84,7 @@ limit 1`, pubkey).Scan(&account, &banid, &banissued, &banexpires, &banexpired, &
 	}
 
 	// stage 3 isp check
-	if account == nil {
+	if account == nil && !tryCfgGetD(tryGetBoolGen("allowNonLinkedHide"), false, inst.cfgs...) {
 		rsp, err := ISPchecker.Lookup(ip)
 		if err != nil {
 			inst.logger.Printf("Failed to lookup ISP: %s", err.Error())
