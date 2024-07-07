@@ -86,11 +86,13 @@ func webHandleReload(w http.ResponseWriter, r *http.Request) {
 	}
 	w.WriteHeader(http.StatusOK)
 	w.Write([]byte("Config reloaded"))
+	w.Write([]byte("\n"))
 }
 
 func webHandleAlive(w http.ResponseWriter, r *http.Request) {
 	w.WriteHeader(http.StatusOK)
 	w.Write([]byte("Autohoster backend online, room creation allowed: " + fmt.Sprint(!disallowInstanceCreation.Load())))
+	w.Write([]byte("\n"))
 }
 
 func webHandleRequestRoom(w http.ResponseWriter, r *http.Request) {
@@ -119,4 +121,5 @@ func webHandleRequestRoom(w http.ResponseWriter, r *http.Request) {
 	go spawnRunner(gi)
 	w.WriteHeader(http.StatusOK)
 	w.Write([]byte(fmt.Sprintf("Room created, join with host.wz2100-autohost.net:%d", gi.Settings.GamePort)))
+	w.Write([]byte("\n"))
 }
