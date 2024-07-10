@@ -23,6 +23,7 @@ func submitReport(inst *instance, reportBytes []byte) {
 		err := recoverSave(inst)
 		if err != nil {
 			inst.logger.Printf("Failed to save instance recovery json: %s", err.Error())
+			discordPostError("Failed to save instance recovery json: %s (instance %d)", err.Error(), inst.Id)
 		}
 	} else {
 		submitFrame(inst, reportBytes)
@@ -42,6 +43,7 @@ func submitBegin(inst *instance, reportBytes []byte) int {
 	err := json.Unmarshal(reportBytes, &report)
 	if err != nil {
 		inst.logger.Printf("Failed to unmarshal game report: %s report was %q", err.Error(), string(reportBytes))
+		discordPostError("Failed to unmarshal game report: %s report was %q (instance %d)", err.Error(), string(reportBytes), inst.Id)
 		return -1
 	}
 	var gid int
@@ -85,6 +87,7 @@ func submitBegin(inst *instance, reportBytes []byte) int {
 	})
 	if err != nil {
 		inst.logger.Printf("Failed to begin game: %s (gid %d)", err.Error(), inst.GameId)
+		discordPostError("Failed to begin game: %s (gid %d) (instance %d)", err.Error(), inst.GameId, inst.Id)
 	}
 	return gid
 }
@@ -94,6 +97,7 @@ func submitFrame(inst *instance, reportBytes []byte) {
 	err := json.Unmarshal(reportBytes, &report)
 	if err != nil {
 		inst.logger.Printf("Failed to unmarshal game report: %s (gid %d) report was %q", err.Error(), inst.GameId, string(reportBytes))
+		discordPostError("Failed to unmarshal game report: %s report was %q (instance %d)", err.Error(), string(reportBytes), inst.Id)
 		return
 	}
 	frame := gamereport.GameReportGraphFrame{
@@ -144,9 +148,11 @@ func submitFrame(inst *instance, reportBytes []byte) {
 	tag, err := dbpool.Exec(context.Background(), `update games set graphs = coalesce(graphs, '[]'::json)::jsonb || $1::jsonb where id = $2`, frame, inst.GameId)
 	if err != nil {
 		inst.logger.Printf("Failed to add game frame: %s (gid %d)", err.Error(), inst.GameId)
+		discordPostError("Failed to add game frame: %s (gid %d) (instance %d)", err.Error(), inst.GameId, inst.Id)
 	}
 	if !tag.Update() || tag.RowsAffected() != 1 {
 		inst.logger.Printf("SUS tag while adding game: %s (gid %d)", tag, inst.GameId)
+		discordPostError("SUS tag while adding game: %s (gid %d) (instance %d)", tag, inst.GameId, inst.Id)
 	}
 }
 
@@ -176,6 +182,7 @@ func submitEnd(inst *instance, reportBytes []byte) {
 	})
 	if err != nil {
 		inst.logger.Printf("Failed to finalize: %s (gid %d)", err.Error(), inst.GameId)
+		discordPostError("Failed to finalize: %s (gid %d) (instance %d)", err.Error(), inst.GameId, inst.Id)
 	}
 }
 
@@ -183,11 +190,13 @@ func sendReplayToStorage(inst *instance) {
 	replayPath, err := findReplay(inst)
 	if err != nil {
 		inst.logger.Printf("Failed to find replay: %s", err.Error())
+		discordPostError("Failed to find replay: %s (instance %d)", err.Error(), inst.Id)
 		return
 	}
 	err = copyReplayToStorage(inst, replayPath)
 	if err != nil {
-		inst.logger.Printf("Failed to find replay: %s", err.Error())
+		inst.logger.Printf("Failed to copy replay: %s", err.Error())
+		discordPostError("Failed to copy replay: %s (instance %d)", err.Error(), inst.Id)
 	}
 }
 
