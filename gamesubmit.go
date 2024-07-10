@@ -6,6 +6,7 @@ import (
 	"encoding/base64"
 	"encoding/json"
 	"errors"
+	"fmt"
 	"io"
 	"io/fs"
 	"math/big"
@@ -92,6 +93,10 @@ func submitBegin(inst *instance, reportBytes []byte) int {
 	return gid
 }
 
+var (
+	frameErrorSuspends = map[int64]string{}
+)
+
 func submitFrame(inst *instance, reportBytes []byte) {
 	report := gamereport.GameReport{}
 	err := json.Unmarshal(reportBytes, &report)
@@ -152,7 +157,17 @@ func submitFrame(inst *instance, reportBytes []byte) {
 	}
 	if !tag.Update() || tag.RowsAffected() != 1 {
 		inst.logger.Printf("SUS tag while adding game: %s (gid %d)", tag, inst.GameId)
-		discordPostError("SUS tag while adding game: %s (gid %d) (instance %d)", tag, inst.GameId, inst.Id)
+		errMsgToSend := fmt.Sprintf("SUS tag while adding game: %s (gid %d) (instance %d)", tag, inst.GameId, inst.Id)
+		errMsg, ok := frameErrorSuspends[inst.Id]
+		if !ok {
+			discordPostError(errMsgToSend)
+			frameErrorSuspends[inst.Id] = errMsgToSend
+		} else {
+			if errMsg != errMsgToSend {
+				discordPostError(errMsgToSend)
+				frameErrorSuspends[inst.Id] = errMsgToSend
+			}
+		}
 	}
 }
 
