@@ -48,6 +48,7 @@ func spawnRunner(inst *instance) {
 		"--async-join-approve",
 		"--enablecmdinterface=stdin",
 		"--host-chat-config=quickchat",
+		"--autorating=http://localhost:5555/rating/",
 	}
 	inst.logger.Printf("Starting %q with args %#+v", inst.BinPath, args)
 	pr, err := os.StartProcess(inst.BinPath, args, &os.ProcAttr{
