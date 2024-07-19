@@ -99,18 +99,21 @@ func webHandleRequestRoom(w http.ResponseWriter, r *http.Request) {
 	b, err := io.ReadAll(r.Body)
 	if err != nil {
 		w.WriteHeader(http.StatusBadRequest)
-		log.Printf("Failed to read body: %s", err.Error())
+		log.Printf("HTTP room request: failed to read body: %s", err.Error())
+		discordPostError("HTTP room request: failed to read body: %s", err.Error())
 		return
 	}
 	c, err := lac.FromBytesJSON(b)
 	if err != nil {
 		w.WriteHeader(http.StatusBadRequest)
-		log.Printf("Failed to unmarshal json: %s", err.Error())
+		log.Printf("HTTP room request: failed to unmarshal json: %s", err.Error())
+		discordPostError("HTTP room request: failed to unmarshal json: %s", err.Error())
 		return
 	}
 	gi, err := generateInstance(c)
 	if err != nil {
-		log.Printf("Failed to generate instance: %s", err.Error())
+		log.Printf("HTTP room request: failed to generate instance: %s", err.Error())
+		discordPostError("HTTP room request: failed to generate instance: %s", err.Error())
 		if gi != nil {
 			releaseInstance(gi)
 		}
