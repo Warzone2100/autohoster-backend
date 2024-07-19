@@ -85,6 +85,8 @@ github.com/mattn/go-isatty v0.0.7/go.mod h1:Iq45c/XA43vh69/j3iqttzPXn0bhXyGjM0Hd
 github.com/mattn/go-isatty v0.0.12/go.mod h1:cbi8OIDigv2wuxKPP5vlRcQ1OAZbq2CE4Kysco4FUpU=
 github.com/maxsupermanhd/go-wz v0.0.0-20240121163618-c14dfcaf5b68 h1:X+CPDjM41ajxcwv176J3ROvNIp6oD+ReW1bhCj+m388=
 github.com/maxsupermanhd/go-wz v0.0.0-20240121163618-c14dfcaf5b68/go.mod h1:whdCX9KN3xvh/5yaNYiQgC63suBBh6chAAbzNtspCas=
+github.com/maxsupermanhd/go-wz v0.0.0-20240707192712-35af664a298a h1:epB8KRiwI9mSobkRrlMOJd0MmlQK9RbtTwE41GPhaS0=
+github.com/maxsupermanhd/go-wz v0.0.0-20240707192712-35af664a298a/go.mod h1:whdCX9KN3xvh/5yaNYiQgC63suBBh6chAAbzNtspCas=
 github.com/maxsupermanhd/lac/v2 v2.0.0-20240629122957-f72b94d89182 h1:BFT/9iK6TCLgCcYqzM2aIvVVE11Nu7m6lfsFKWHF89c=
 github.com/maxsupermanhd/lac/v2 v2.0.0-20240629122957-f72b94d89182/go.mod h1:KrZcC5JKenEugfceMWaBHrwh0BzSLWswNnednTwdaAQ=
 github.com/mitchellh/mapstructure v1.5.0 h1:jeMsZIYE/09sWLaz43PL7Gy6RuMjD2eJVyuac5Z2hdY=
