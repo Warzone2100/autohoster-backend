@@ -108,7 +108,7 @@ var (
 				return true
 			}
 			pubkeyDiscovery(msgpubkey)
-			jd, action, reason := joinCheck(inst, msgip, string(msgname), msgpubkey)
+			jd, action, reason := joinCheck(inst, msgip, string(msgname), msgpubkey, msgb64pubkey)
 			switch action {
 
 			case joinCheckActionLevelApprove:
@@ -156,6 +156,38 @@ var (
 				return true
 			}
 			messageHandlerProcessIdentityJoin(inst, msgb64pubkey)
+			return false
+		},
+	}, {
+		match:   hosterMessageMatchTypePrefix,
+		mPrefix: "WZEVENT: movedPlayerToSpec: ",
+		fn: func(inst *instance, msg string) bool {
+			// WZEVENT: movedPlayerToSpec: 5 -> 16 WMy35N3raEEEgOt3stR62BRvP8E8osfNSiMZOCw5SqU= 0e308437d20db97d110ceecc448d39517b47deb7cbb7fe0338f4308f2619d483 V Qm9kbWluIEJlYXN0
+			var msgplidfrom, msgplidto int
+			var msgb64pubkey, msghash, msgverified, msgb64name, msgip string
+			i, err := fmt.Sscanf(msg, "WZEVENT: movedPlayerToSpec: %d -> %d %s %s %s %s %s",
+				&msgplidfrom, &msgplidto, &msgb64pubkey, &msghash, &msgverified, &msgb64name, &msgip)
+			if err != nil || i != 7 {
+				inst.logger.Printf("Failed to parse event movedPlayerToSpec: %v", err)
+				return true
+			}
+			joincheckWasMovedOutGlobal.add(msgb64pubkey, inst.Id)
+			return false
+		},
+	}, {
+		match:   hosterMessageMatchTypePrefix,
+		mPrefix: "WZEVENT: movedSpecToPlayer: ",
+		fn: func(inst *instance, msg string) bool {
+			// 1724192419 : "WZEVENT: movedSpecToPlayer: 14 -> 0 iYTMPZSZd4bB8Ni750QQmynGug+wcD2Baxj9gclB9w0= 0bfb8797cbc6567b4248bfa29b6f3220929870e100814f0ede761626e7dc8e97 V YnlfbW9jYXJ0IFtSVV0=
+			var msgplidfrom, msgplidto int
+			var msgb64pubkey, msghash, msgverified, msgb64name, msgip string
+			i, err := fmt.Sscanf(msg, "WZEVENT: movedSpecToPlayer: %d -> %d %s %s %s %s %s",
+				&msgplidfrom, &msgplidto, &msgb64pubkey, &msghash, &msgverified, &msgb64name, &msgip)
+			if err != nil || i != 7 {
+				inst.logger.Printf("Failed to parse event movedSpecToPlayer: %v", err)
+				return true
+			}
+			joincheckWasMovedOutGlobal.remove(msgb64pubkey, inst.Id)
 			return false
 		},
 	}, {

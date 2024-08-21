@@ -136,13 +136,13 @@ func stopAllRunners() {
 	}
 }
 
-func isInstanceInLobby(queueName string) int64 {
+func isQueueInLobby(queueName string) int64 {
 	instancesLock.Lock()
 	defer instancesLock.Unlock()
-	return isInstanceInLobbyNOLOCK(queueName)
+	return isQueueInLobbyNOLOCK(queueName)
 }
 
-func isInstanceInLobbyNOLOCK(queueName string) int64 {
+func isQueueInLobbyNOLOCK(queueName string) int64 {
 	for i := range instances {
 		if instances[i].QueueName != queueName {
 			continue
@@ -152,4 +152,22 @@ func isInstanceInLobbyNOLOCK(queueName string) int64 {
 		}
 	}
 	return 0
+}
+
+func isInstanceInLobby(instanceID int64) bool {
+	instancesLock.Lock()
+	defer instancesLock.Unlock()
+	return isInstanceInLobbyNOLOCK(instanceID)
+}
+
+func isInstanceInLobbyNOLOCK(instanceID int64) bool {
+	for i := range instances {
+		if instances[i].Id != instanceID {
+			continue
+		}
+		if instances[i].state.Load() <= int64(instanceStateInLobby) {
+			return true
+		}
+	}
+	return false
 }

@@ -2,11 +2,12 @@ package main
 
 import (
 	"context"
-	"encoding/base64"
 	"errors"
 	"fmt"
 	"log"
+	"slices"
 	"strconv"
+	"sync"
 	"time"
 
 	"github.com/jackc/pgx/v4"
@@ -14,7 +15,7 @@ import (
 )
 
 // approve approvespec reject ban
-func joinCheck(inst *instance, ip string, name string, pubkey []byte) (jd joinDispatch, action joinCheckActionLevel, reason string) {
+func joinCheck(inst *instance, ip string, name string, pubkey []byte, pubkeyB64 string) (jd joinDispatch, action joinCheckActionLevel, reason string) {
 	jd.Issued = time.Now()
 	jd.Messages = []string{}
 	jd.AllowChat = true
@@ -149,8 +150,16 @@ where g.game_time < 60000 and g.time_started + $1::interval > now() and (i.pkey 
 		}
 	}
 
+	// stage 6 moved out check
+	if joincheckWasMovedOutGlobal.present(pubkeyB64, inst.Id) {
+		if action == joinCheckActionLevelApprove {
+			jd.Messages = append(jd.Messages, "You not allowed to participate in the game because moderator moved you out earlier")
+			action = joinCheckActionLevelApproveSpec
+		}
+	}
+
 	inst.logger.Printf("connfilter resolved key %v nljoin %v (acc %v) nlplay %v (action %v) nlchat %v (allowed %v)",
-		base64.StdEncoding.EncodeToString(pubkey),
+		pubkeyB64,
 		allowNonLinkedJoin, account,
 		allowNonLinkedPlay, action,
 		allowNonLinkedChat, jd.AllowChat,
@@ -181,6 +190,82 @@ func (l joinCheckActionLevel) String() string {
 	default:
 		return "unknown?!"
 	}
+}
+
+type joincheckWasMovedOut struct {
+	m    map[string][]int64
+	lock sync.Mutex
+}
+
+var joincheckWasMovedOutGlobal = joincheckWasMovedOut{
+	m:    map[string][]int64{},
+	lock: sync.Mutex{},
+}
+
+func (j *joincheckWasMovedOut) _cleanup() {
+	keys := make([]string, 0, len(j.m))
+	for k := range j.m {
+		keys = append(keys, k)
+	}
+
+	for _, k := range keys {
+		v := j.m[k]
+		nv := slices.DeleteFunc(v, func(vv int64) bool {
+			return !isInstanceInLobby(vv)
+		})
+		if len(nv) == 0 {
+			delete(j.m, k)
+			continue
+		}
+		j.m[k] = nv
+	}
+}
+
+func (j *joincheckWasMovedOut) add(identity string, instance int64) {
+	j.lock.Lock()
+	defer j.lock.Unlock()
+
+	j._cleanup()
+
+	r, ok := j.m[identity]
+	if ok {
+		j.m[identity] = append(r, instance)
+		return
+	}
+	j.m[identity] = []int64{instance}
+}
+
+func (j *joincheckWasMovedOut) remove(identity string, instance int64) {
+	j.lock.Lock()
+	defer j.lock.Unlock()
+
+	j._cleanup()
+
+	r, ok := j.m[identity]
+	if ok {
+		if len(r) == 1 {
+			if r[0] == instance {
+				delete(j.m, identity)
+			}
+		} else {
+			j.m[identity] = slices.DeleteFunc(r, func(rr int64) bool {
+				return rr == instance
+			})
+		}
+	}
+}
+
+func (j *joincheckWasMovedOut) present(identity string, instance int64) bool {
+	j.lock.Lock()
+	defer j.lock.Unlock()
+
+	j._cleanup()
+
+	r, ok := j.m[identity]
+	if !ok {
+		return false
+	}
+	return slices.Contains(r, instance)
 }
 
 func checkASNbanned(asn string, cfgs []lac.Conf) bool {

@@ -61,7 +61,7 @@ func populateLobby(lr []lobby.LobbyRoom) {
 		if cfg.GetDSBool(false, "queues", queueName, "disabled") {
 			continue
 		}
-		li := isInstanceInLobby(queueName)
+		li := isQueueInLobby(queueName)
 		if li != 0 {
 			log.Printf("Queue %q in lobby with instance id %v", queueName, li)
 			continue
