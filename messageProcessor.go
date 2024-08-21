@@ -278,10 +278,21 @@ func messageHandlerProcessIdentityJoin(inst *instance, msgb64pubkey string) {
 func messageHandlerProcessChat(inst *instance, msg string) bool {
 	// WZCHATGAM: <index> <ip> <hash> <b64pubkey> dmF1dCDOo86RIFtHTl0= dmF1dCDOo86RIFtHTl0gKEdsb2JhbCk6IGdn V
 	// WZCHATCMD: <index> <ip> <hash> <b64pubkey> <b64name> <b64msg>
-	msg = strings.TrimPrefix(msg, "WZCHATCMD: ")
-	msg = strings.TrimPrefix(msg, "WZCHATLOB: ")
-	var msgindex, msgip, msghash, msgb64pubkey, msgb64name, msgb64content string
-	i, err := fmt.Sscanf(msg, "%s %s %s %s %s %s", &msgindex, &msgip, &msghash, &msgb64pubkey, &msgb64name, &msgb64content)
+	msgtype := "bug"
+	if strings.HasPrefix(msg, "WZCHATCMD: ") {
+		msg = strings.TrimPrefix(msg, "WZCHATCMD: ")
+		msgtype = "CMD"
+	} else if strings.HasPrefix(msg, "WZCHATLOB: ") {
+		msg = strings.TrimPrefix(msg, "WZCHATLOB: ")
+		msgtype = "LOB"
+	} else if strings.HasPrefix(msg, "WZCHATGAM: ") {
+		msg = strings.TrimPrefix(msg, "WZCHATGAM: ")
+		msgtype = "GAM"
+	} else {
+		inst.logger.Printf("Unknown wzchat message type: %q", msg)
+	}
+	var msgindex, msgip, msghash, msgb64pubkey, msgb64name, msgb64content, msgisverified string
+	i, err := fmt.Sscanf(msg, "%s %s %s %s %s %s %s", &msgindex, &msgip, &msghash, &msgb64pubkey, &msgb64name, &msgb64content, &msgisverified)
 	if err != nil || i != 6 {
 		inst.logger.Printf("Failed to parse chat message: %v", err)
 		return true
@@ -307,15 +318,20 @@ func messageHandlerProcessChat(inst *instance, msg string) bool {
 			"Event ID: %s", ecode)
 		instWriteFmt(inst, "ban ip %s %s", msgip, reason)
 	}
-	err = addChatLog(msgip, string(msgname), msgpubkey, string(msgcontent))
+	err = addChatLog(msgip, string(msgname), msgpubkey, msgtype, string(msgcontent))
 	if err != nil {
 		inst.logger.Printf("Failed to log chat: %s", err.Error())
+	}
+	err = handleIdentityLinkMessage(inst, msgb64pubkey, msgpubkey, string(msgname), string(msgcontent), msgisverified == "V")
+	if err != nil {
+		inst.logger.Printf("Failed to handle identity linking: %s", err.Error())
+		instWriteFmt(inst, `chat direct %s Something went very wrong, please contact administrators, this is a bug.`, msgb64pubkey)
 	}
 	return false
 }
 
-func addChatLog(ip string, name string, pkey []byte, msg string) error {
-	tag, err := dbpool.Exec(context.Background(), `INSERT INTO chatlog (ip, name, pkey, msg) VALUES ($1, $2, $3, $4)`, ip, name, pkey, msg)
+func addChatLog(ip string, name string, pkey []byte, msgtype string, msg string) error {
+	tag, err := dbpool.Exec(context.Background(), `INSERT INTO chatlog (ip, name, pkey, msgtype, msg) VALUES ($1, $2, $3, $4, $5)`, ip, name, pkey, msgtype, msg)
 	if err != nil {
 		return err
 	}
