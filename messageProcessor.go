@@ -341,7 +341,7 @@ func messageHandlerProcessChat(inst *instance, msg string) bool {
 	}
 	err = addChatLog(msgip, string(msgname), msgpubkey, string(msgcontent))
 	if err != nil {
-		inst.logger.Printf("Failed to log chat: %s", err.Error())
+		inst.logger.Printf("Failed to log chat: %s (%q: %q)", err.Error(), string(msgname), string(msgcontent))
 	}
 	return false
 }
