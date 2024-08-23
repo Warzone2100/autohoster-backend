@@ -12,7 +12,6 @@ import (
 	"net/http"
 	"os"
 	"path"
-	"strings"
 	"time"
 
 	"github.com/jackc/pgx/v4"
@@ -69,22 +68,77 @@ func generateInstance(instcfg lac.Conf) (inst *instance, err error) {
 		return
 	}
 	err = geniConfig(inst)
+	if err != nil {
+		return
+	}
+	err = geniActions(inst)
 	return
 }
 
 func geniConfig(inst *instance) error {
-	playerNamePath := tryCfgGetD(tryGetStringGen("identity"), "Autohoster.sta2", inst.cfgs...)
-	c := fmt.Sprintf("[General]\nautorating=true\nplayername=%s\nhostautolagkickseconds=60", strings.TrimSuffix(path.Base(playerNamePath), ".sta2"))
-	perm := fs.FileMode(cfg.GetDInt(644, "filePerms"))
-	ident, err := os.ReadFile(playerNamePath)
-	if err != nil {
-		return err
+	vals := map[string]string{}
+	for _, v := range inst.cfgs {
+		setKeys, ok := v.GetKeys("config")
+		if !ok {
+			continue
+		}
+		for _, setKey := range setKeys {
+			setVal, ok := v.GetString("config", setKey)
+			if !ok {
+				delete(vals, setKey)
+			} else {
+				vals[setKey] = setVal
+			}
+		}
 	}
-	err = os.WriteFile(path.Join(inst.ConfDir, "multiplay", "players", path.Base(playerNamePath)), ident, perm)
-	if err != nil {
-		return err
+	perm := fs.FileMode(cfg.GetDInt(644, "filePerms"))
+	c := "[General]\n"
+	for k, v := range vals {
+		c += fmt.Sprintf("%s=%s\n", k, v)
 	}
 	return os.WriteFile(path.Join(inst.ConfDir, "config"), []byte(c), perm)
+}
+
+func geniActions(inst *instance) error {
+	acts := map[string]map[string]any{}
+	for _, v := range inst.cfgs {
+		actionKeys, ok := v.GetKeys("actions")
+		if !ok {
+			continue
+		}
+		for _, actionKey := range actionKeys {
+			act, ok := v.GetMapStringAny("actions", actionKey)
+			if !ok {
+				delete(acts, actionKey)
+			} else {
+				acts[actionKey] = act
+			}
+		}
+	}
+
+	perm := fs.FileMode(cfg.GetDInt(644, "filePerms"))
+	for _, act := range acts {
+		switch act["op"] {
+		case "copy":
+			var ok bool
+			var afrom, ato string
+			if afrom, ok = act["from"].(string); !ok {
+				continue
+			}
+			if ato, ok = act["to"].(string); !ok {
+				continue
+			}
+			f, err := os.ReadFile(afrom)
+			if err != nil {
+				return err
+			}
+			err = os.WriteFile(path.Join(inst.ConfDir, ato), f, perm)
+			if err != nil {
+				return err
+			}
+		}
+	}
+	return nil
 }
 
 func geniMap(inst *instance) error {

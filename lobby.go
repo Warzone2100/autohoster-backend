@@ -70,9 +70,12 @@ func populateLobby(lr []lobby.LobbyRoom) {
 		gi, err := generateInstance(cfg.DupSubTree("queues", queueName))
 		if err != nil {
 			log.Printf("Failed to generate instance: %s", err.Error())
+			giid := int64(-1)
 			if gi != nil {
+				giid = gi.Id
 				releaseInstance(gi)
 			}
+			discordPostError("%s Lobby queue failed to generate instance %d: %s", time.Now(), giid, err.Error())
 			continue
 		}
 		gi.QueueName = queueName
