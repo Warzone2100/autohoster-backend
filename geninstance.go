@@ -91,11 +91,12 @@ func geniConfig(inst *instance) error {
 			}
 		}
 	}
-	perm := fs.FileMode(cfg.GetDInt(644, "filePerms"))
 	c := "[General]\n"
 	for k, v := range vals {
 		c += fmt.Sprintf("%s=%s\n", k, v)
 	}
+	inst.logger.Printf("Writing config: %+#v", vals)
+	perm := fs.FileMode(cfg.GetDInt(644, "filePerms"))
 	return os.WriteFile(path.Join(inst.ConfDir, "config"), []byte(c), perm)
 }
 
