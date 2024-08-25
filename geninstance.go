@@ -116,7 +116,8 @@ func geniActions(inst *instance) error {
 		}
 	}
 
-	perm := fs.FileMode(cfg.GetDInt(644, "filePerms"))
+	fperm := fs.FileMode(cfg.GetDInt(644, "filePerms"))
+	dperm := fs.FileMode(cfg.GetDInt(755, "dirPerms"))
 	for _, act := range acts {
 		switch act["op"] {
 		case "copy":
@@ -132,7 +133,8 @@ func geniActions(inst *instance) error {
 			if err != nil {
 				return err
 			}
-			err = os.WriteFile(path.Join(inst.ConfDir, ato), f, perm)
+			os.MkdirAll(path.Join(inst.ConfDir, path.Dir(ato)), dperm)
+			err = os.WriteFile(path.Join(inst.ConfDir, ato), f, fperm)
 			if err != nil {
 				return err
 			}
@@ -196,9 +198,9 @@ func geniPreset(inst *instance) error {
 			"bases":               tryCfgGetD(tryPickNumberGen("settingsBase"), 69, inst.cfgs...),
 			"name":                tryCfgGetD(tryGetStringGen("roomName"), "Welcome", inst.cfgs...),
 			"techLevel":           tryCfgGetD(tryPickNumberGen("settingsTechLevel"), 1, inst.cfgs...),
-			"spectatorHost":       true,
+			"spectatorHost":       tryCfgGetD(tryGetBoolGen("spectatorHost"), true, inst.cfgs...),
 			"openSpectatorSlots":  tryCfgGetD(tryPickNumberGen("settingsSpecSlots"), 10, inst.cfgs...),
-			"allowPositionChange": true,
+			"allowPositionChange": tryCfgGetD(tryGetBoolGen("allowPositionChange"), true, inst.cfgs...),
 		},
 	}
 
