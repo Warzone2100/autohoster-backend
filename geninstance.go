@@ -202,19 +202,34 @@ func geniPreset(inst *instance) error {
 		},
 	}
 
-	for p := 0; p < inst.Settings.PlayerCount; p++ {
-		var team int
-		if inst.Settings.PlayerCount%2 != 0 {
-			team = p
-		} else {
-			if p < inst.Settings.PlayerCount/2 {
-				team = 0
+	var presetOverride map[string]any
+	for _, cfg := range inst.cfgs {
+		o, ok := cfg.GetMapStringAny("presetOverride")
+		if ok {
+			presetOverride = o
+			break
+		}
+	}
+
+	if presetOverride == nil {
+		for p := 0; p < inst.Settings.PlayerCount; p++ {
+			var team int
+			if inst.Settings.PlayerCount%2 != 0 {
+				team = p
 			} else {
-				team = 1
+				if p < inst.Settings.PlayerCount/2 {
+					team = 0
+				} else {
+					team = 1
+				}
+			}
+			preset[fmt.Sprintf("player_%d", p)] = map[string]any{
+				"team": team,
 			}
 		}
-		preset[fmt.Sprintf("player_%d", p)] = map[string]any{
-			"team": team,
+	} else {
+		for k, v := range presetOverride {
+			preset[k] = v
 		}
 	}
 
