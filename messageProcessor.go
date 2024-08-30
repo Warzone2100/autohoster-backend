@@ -313,6 +313,7 @@ func messageHandlerProcessChat(inst *instance, msg string) bool {
 	origmsg := msg
 	msg = strings.TrimPrefix(msg, "WZCHATCMD: ")
 	msg = strings.TrimPrefix(msg, "WZCHATLOB: ")
+	msg = strings.TrimPrefix(msg, "WZCHATGAM: ")
 	var msgindex, msgip, msghash, msgb64pubkey, msgb64name, msgb64content string
 	i, err := fmt.Sscanf(msg, "%s %s %s %s %s %s", &msgindex, &msgip, &msghash, &msgb64pubkey, &msgb64name, &msgb64content)
 	if err != nil || i != 6 {
