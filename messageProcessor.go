@@ -342,8 +342,8 @@ func messageHandlerProcessChat(inst *instance, msg string) bool {
 	}
 	err = addChatLog(msgip, string(msgname), msgpubkey, string(msgcontent))
 	if err != nil {
-		inst.logger.Printf("Failed to log chat: %s (%q: %q), was fed %q", err.Error(), string(msgname), string(msgcontent), origmsg)
-		discordPostError("Failed to log chat: %s (%q: %q), was fed %q", err.Error(), string(msgname), string(msgcontent), origmsg)
+		inst.logger.Printf("Failed to log chat of instance `%d`: %s (%q: %q), was fed %q", inst.Id, err.Error(), string(msgname), string(msgcontent), origmsg)
+		discordPostError("Failed to log chat of instance `%d`: %s (%q: %q), was fed %q", inst.Id, err.Error(), string(msgname), string(msgcontent), origmsg)
 	}
 	return false
 }
