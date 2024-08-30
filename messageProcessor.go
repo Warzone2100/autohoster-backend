@@ -310,6 +310,7 @@ func messageHandlerProcessIdentityJoin(inst *instance, msgb64pubkey string) {
 func messageHandlerProcessChat(inst *instance, msg string) bool {
 	// WZCHATGAM: <index> <ip> <hash> <b64pubkey> dmF1dCDOo86RIFtHTl0= dmF1dCDOo86RIFtHTl0gKEdsb2JhbCk6IGdn V
 	// WZCHATCMD: <index> <ip> <hash> <b64pubkey> <b64name> <b64msg>
+	origmsg := msg
 	msg = strings.TrimPrefix(msg, "WZCHATCMD: ")
 	msg = strings.TrimPrefix(msg, "WZCHATLOB: ")
 	var msgindex, msgip, msghash, msgb64pubkey, msgb64name, msgb64content string
@@ -341,7 +342,8 @@ func messageHandlerProcessChat(inst *instance, msg string) bool {
 	}
 	err = addChatLog(msgip, string(msgname), msgpubkey, string(msgcontent))
 	if err != nil {
-		inst.logger.Printf("Failed to log chat: %s (%q: %q)", err.Error(), string(msgname), string(msgcontent))
+		inst.logger.Printf("Failed to log chat: %s (%q: %q), was fed %q", err.Error(), string(msgname), string(msgcontent), origmsg)
+		discordPostError("Failed to log chat: %s (%q: %q), was fed %q", err.Error(), string(msgname), string(msgcontent), origmsg)
 	}
 	return false
 }
