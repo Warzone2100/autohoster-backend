@@ -109,6 +109,7 @@ var (
 			}
 			pubkeyDiscovery(msgpubkey)
 			jd, action, reason := joinCheck(inst, msgip, string(msgname), msgpubkey, msgb64pubkey)
+			addChatLog(msgip, string(msgname), msgpubkey, "", "joinattempt")
 			switch action {
 
 			case joinCheckActionLevelApprove:
@@ -311,6 +312,14 @@ func messageHandlerProcessChat(inst *instance, msg string) bool {
 	// WZCHATGAM: <index> <ip> <hash> <b64pubkey> dmF1dCDOo86RIFtHTl0= dmF1dCDOo86RIFtHTl0gKEdsb2JhbCk6IGdn V
 	// WZCHATCMD: <index> <ip> <hash> <b64pubkey> <b64name> <b64msg>
 	origmsg := msg
+	msgtype := "invalid"
+	if strings.HasPrefix(msg, "WZCHATCMD: ") {
+		msgtype = "WZCHATCMD"
+	} else if strings.HasPrefix(msg, "WZCHATLOB: ") {
+		msgtype = "WZCHATLOB"
+	} else if strings.HasPrefix(msg, "WZCHATGAM: ") {
+		msgtype = "WZCHATGAM"
+	}
 	msg = strings.TrimPrefix(msg, "WZCHATCMD: ")
 	msg = strings.TrimPrefix(msg, "WZCHATLOB: ")
 	msg = strings.TrimPrefix(msg, "WZCHATGAM: ")
@@ -341,7 +350,7 @@ func messageHandlerProcessChat(inst *instance, msg string) bool {
 			"Event ID: %s", ecode)
 		instWriteFmt(inst, "ban ip %s %s", msgip, reason)
 	}
-	err = addChatLog(msgip, string(msgname), msgpubkey, string(msgcontent))
+	err = addChatLog(msgip, string(msgname), msgpubkey, string(msgcontent), msgtype)
 	if err != nil {
 		inst.logger.Printf("Failed to log chat of instance `%d`: %s (%q: %q), was fed %q", inst.Id, err.Error(), string(msgname), string(msgcontent), origmsg)
 		discordPostError("Failed to log chat of instance `%d`: %s (%q: %q), was fed %q", inst.Id, err.Error(), string(msgname), string(msgcontent), origmsg)
@@ -349,8 +358,8 @@ func messageHandlerProcessChat(inst *instance, msg string) bool {
 	return false
 }
 
-func addChatLog(ip string, name string, pkey []byte, msg string) error {
-	tag, err := dbpool.Exec(context.Background(), `INSERT INTO chatlog (ip, name, pkey, msg) VALUES ($1, $2, $3, $4)`, ip, name, pkey, msg)
+func addChatLog(ip string, name string, pkey []byte, msg string, msgtype string) error {
+	tag, err := dbpool.Exec(context.Background(), `INSERT INTO chatlog (ip, name, pkey, msg, msgtype) VALUES ($1, $2, $3, $4, $5)`, ip, name, pkey, msg, msgtype)
 	if err != nil {
 		return err
 	}
