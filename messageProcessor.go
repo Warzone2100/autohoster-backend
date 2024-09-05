@@ -355,7 +355,7 @@ func messageHandlerProcessChat(inst *instance, msg string) bool {
 		inst.logger.Printf("Failed to log chat of instance `%d`: %s (%q: %q), was fed %q", inst.Id, err.Error(), string(msgname), string(msgcontent), origmsg)
 		discordPostError("Failed to log chat of instance `%d`: %s (%q: %q), was fed %q", inst.Id, err.Error(), string(msgname), string(msgcontent), origmsg)
 	}
-	if string(msgcontent) == "/stat" || string(msgcontent) == "/stats" {
+	if msgtype == "WZCHATCMD" && (string(msgcontent) == "/stat" || string(msgcontent) == "/stats") {
 		instWriteFmt(inst, `chat direct %s %s`, msgb64pubkey, "All Autohoster's games are available at the website: https://wz2100-autohost.net/games (with detailed dtatistics, charts and replay)")
 	}
 	return false
