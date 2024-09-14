@@ -292,7 +292,7 @@ func messageHandlerProcessIdentityJoin(inst *instance, msgb64pubkey string) {
 			continue
 		}
 		for _, k := range o {
-			s, ok := cfg.GetString()
+			s, ok := cfg.GetString("motds", k)
 			if ok {
 				if s == "" {
 					delete(motds, k)
