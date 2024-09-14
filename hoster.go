@@ -39,7 +39,7 @@ func spawnRunner(inst *instance) {
 		"--headless",
 		"--gameport=" + fmt.Sprint(inst.Settings.GamePort),
 		"--enablelobbyslashcmd",
-		"--startplayers=" + fmt.Sprint(inst.Settings.PlayerCount),
+		"--startplayers=" + fmt.Sprint(tryCfgGetD(tryGetIntGen("startPlayers"), inst.Settings.PlayerCount, inst.cfgs...)),
 		"--gamelog-output=log,cmdinterface",
 		"--gamelog-outputkey=playerposition",
 		"--gamelog-frameinterval=1",
