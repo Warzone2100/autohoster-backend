@@ -61,6 +61,9 @@ func submitBegin(inst *instance, reportBytes []byte) int {
 			return err
 		}
 		for _, v := range report.PlayerData {
+			if v.PublicKey == "" {
+				continue
+			}
 			PublicKeyBytes, err := base64.StdEncoding.DecodeString(v.PublicKey)
 			if err != nil {
 				return err
@@ -129,6 +132,9 @@ func submitFrame(inst *instance, reportBytes []byte) {
 		RecentStructurePowerLost:  make([]int, len(report.PlayerData)),
 	}
 	for i, v := range report.PlayerData {
+		if v.PublicKey == "" {
+			continue
+		}
 		frame.Kills[i] = v.Kills
 		frame.Power[i] = v.Power
 		frame.Score[i] = v.Score
@@ -181,6 +187,9 @@ func submitEnd(inst *instance, reportBytes []byte) {
 	}
 	err = dbpool.BeginFunc(context.Background(), func(tx pgx.Tx) error {
 		for _, v := range report.PlayerData {
+			if v.PublicKey == "" {
+				continue
+			}
 			_, err := dbpool.Exec(context.Background(), `update players set usertype = $1, props = $2 where game = $3 and position = $4`,
 				v.Usertype, v.GameReportPlayerStatistics, inst.GameId, v.Position)
 			if err != nil {

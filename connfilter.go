@@ -5,6 +5,7 @@ import (
 	"errors"
 	"fmt"
 	"log"
+	"regexp"
 	"slices"
 	"strconv"
 	"sync"
@@ -155,6 +156,41 @@ where g.game_time < 60000 and g.time_started + $1::interval > now() and (i.pkey 
 		if action == joinCheckActionLevelApprove {
 			jd.Messages = append(jd.Messages, "You not allowed to participate in the game because moderator moved you out earlier")
 			action = joinCheckActionLevelApproveSpec
+		}
+	}
+
+	// stage 7 ip based mute
+	ipmutes := map[string]bool{}
+	for i := len(inst.cfgs) - 1; i >= 0; i-- {
+		o, ok := inst.cfgs[i].GetKeys("ipmute")
+		if !ok {
+			continue
+		}
+		for _, k := range o {
+			s, ok := inst.cfgs[i].GetBool("ipmute", k)
+			if !ok {
+				continue
+			}
+			if !s {
+				delete(ipmutes, k)
+			} else {
+				ipmutes[k] = s
+			}
+		}
+	}
+	for kip, v := range ipmutes {
+		if !v {
+			continue
+		}
+		reg, err := regexp.Compile(kip)
+		if err != nil {
+			inst.logger.Printf("Failed to compile regexp %q: %s", kip, err.Error())
+			continue
+		}
+		if reg.Match([]byte(ip)) {
+			if jd.AllowChat {
+				jd.AllowChat = false
+			}
 		}
 	}
 
