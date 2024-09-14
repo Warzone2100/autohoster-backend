@@ -4,6 +4,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"slices"
 	"strings"
 	"time"
 )
@@ -284,7 +285,31 @@ var (
 )
 
 func messageHandlerProcessIdentityJoin(inst *instance, msgb64pubkey string) {
-	instWriteFmt(inst, `chat direct %s %s`, msgb64pubkey, "Warning! Autohoster is in staging mode, games are not recorded nor count towards rating!")
+	motds := map[string]any{}
+	for i := len(inst.cfgs) - 1; i >= 0; i++ {
+		o, ok := cfg.GetKeys("motds")
+		if !ok {
+			continue
+		}
+		for _, k := range o {
+			s, ok := cfg.GetString()
+			if ok {
+				if s == "" {
+					delete(motds, k)
+				} else {
+					motds[k] = s
+				}
+			}
+		}
+	}
+	keys := make([]string, 0, len(motds))
+	for k := range motds {
+		keys = append(keys, k)
+	}
+	slices.Sort(keys)
+	for _, k := range keys {
+		instWriteFmt(inst, `chat direct %s %s`, msgb64pubkey, motds[k])
+	}
 	instWriteFmt(inst, `chat direct %s This game has time limit of %d minutes.`, msgb64pubkey, inst.Settings.TimeLimit)
 	d, ok := inst.OnJoinDispatch[msgb64pubkey]
 	if ok {
