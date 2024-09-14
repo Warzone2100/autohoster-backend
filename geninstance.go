@@ -180,14 +180,14 @@ func geniPreset(inst *instance) error {
 	inst.BinPath = tryCfgGetD(tryGetStringGen("binary"), "warzone2100", inst.cfgs...)
 	preset := map[string]any{
 		"locked": map[string]any{
-			"power":      true,
-			"alliances":  false,
-			"teams":      true,
-			"difficulty": true,
-			"ai":         true,
-			"scavengers": false,
-			"position":   false,
-			"bases":      false,
+			"power":      tryCfgGetD(tryGetBoolGen("locked", "power"), true, inst.cfgs...),
+			"alliances":  tryCfgGetD(tryGetBoolGen("locked", "alliances"), false, inst.cfgs...),
+			"teams":      tryCfgGetD(tryGetBoolGen("locked", "teams"), true, inst.cfgs...),
+			"difficulty": tryCfgGetD(tryGetBoolGen("locked", "difficulty"), true, inst.cfgs...),
+			"ai":         tryCfgGetD(tryGetBoolGen("locked", "ai"), true, inst.cfgs...),
+			"scavengers": tryCfgGetD(tryGetBoolGen("locked", "scavengers"), false, inst.cfgs...),
+			"position":   tryCfgGetD(tryGetBoolGen("locked", "position"), false, inst.cfgs...),
+			"bases":      tryCfgGetD(tryGetBoolGen("locked", "bases"), false, inst.cfgs...),
 		},
 		"challenge": map[string]any{
 			"map":                 inst.Settings.MapName,
