@@ -383,6 +383,9 @@ func messageHandlerProcessChat(inst *instance, msg string) bool {
 	if msgtype == "WZCHATCMD" && (string(msgcontent) == "/stat" || string(msgcontent) == "/stats") {
 		instWriteFmt(inst, `chat direct %s %s`, msgb64pubkey, "All Autohoster's games are available at the website: https://wz2100-autohost.net/games (with detailed dtatistics, charts and replay)")
 	}
+	if msgtype == "WZCHATCMD" && (strings.HasPrefix(string(msgcontent), "/votekick")) {
+		instWriteFmt(inst, `chat direct %s %s`, msgb64pubkey, "If you would like to become a part of Autohoster moderation team, feel free to contact us: https://wz2100-autohost.net/about#contact")
+	}
 	return false
 }
 
