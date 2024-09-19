@@ -24,8 +24,6 @@ func main() {
 
 	go routineDiscordErrorReporter()
 
-	ratelimitChatPenalties = ratelimitChatLoadPenalties()
-
 	recoverInstances()
 
 	signals := make(chan os.Signal, 1)
