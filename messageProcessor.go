@@ -387,7 +387,8 @@ func messageHandlerProcessChat(inst *instance, msg string) bool {
 		instWriteFmt(inst, `chat direct %s %s`, msgb64pubkey, "If you would like to become a part of Autohoster moderation team, feel free to contact us: https://wz2100-autohost.net/about#contact")
 	}
 	if msgtype == "WZCHATLOB" {
-		rlcDuration, rlcExceeded := ratelimitChatHandleMessage(inst, msgip)
+		ratelimitChatHandleMessage(inst, msgip)
+		rlcDuration, rlcExceeded := ratelimitChatCheck(inst, msgip)
 		if rlcExceeded {
 			instWriteFmt(inst, `set chat quickchat %s`, msgb64pubkey)
 			instWriteFmt(inst, `chat direct %s %s`, msgb64pubkey, "You were limited to quickchat due to spamming for "+rlcDuration.String())
