@@ -389,11 +389,9 @@ func messageHandlerProcessChat(inst *instance, msg string) bool {
 	if msgtype == "WZCHATCMD" && (strings.HasPrefix(string(msgcontent), "/rl")) {
 		if msghash == "aa8519279495c1e8e6f1603aa31c01796d4eeae46e4a81e666404aea0064371d" {
 			ratelimitChatLock.Lock()
-			instWriteFmt(inst, `chat direct %s %s`, msgb64pubkey, "rate limit penalties:")
 			for k, v := range ratelimitChatPenalties {
 				instWriteFmt(inst, `chat direct %s %s`, msgb64pubkey, fmt.Sprintf("penalty %q for %s", k, v))
 			}
-			instWriteFmt(inst, `chat direct %s %s`, msgb64pubkey, "rate limit data:")
 			for k, v := range ratelimitChatData {
 				instWriteFmt(inst, `chat direct %s %s`, msgb64pubkey, fmt.Sprintf("data %q for %d", k, v.Len()))
 			}
