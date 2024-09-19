@@ -166,6 +166,15 @@ where g.game_time < 60000 and g.time_started + $1::interval > now() and (i.pkey 
 		}
 	}
 
+	// stage 8 chat rate limit mute
+	if account == nil {
+		rlcDuration, rlcExceeded := ratelimitChatCheck(inst, ip)
+		if rlcExceeded {
+			jd.AllowChat = false
+			jd.Messages = append(jd.Messages, "You were limited to quickchat due to spamming for "+rlcDuration.String())
+		}
+	}
+
 	inst.logger.Printf("connfilter resolved key %v nljoin %v (acc %v) nlplay %v (action %v) nlchat %v (allowed %v)",
 		pubkeyB64,
 		allowNonLinkedJoin, account,
