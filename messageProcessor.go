@@ -386,18 +386,6 @@ func messageHandlerProcessChat(inst *instance, msg string) bool {
 	if msgtype == "WZCHATCMD" && (strings.HasPrefix(string(msgcontent), "/votekick")) {
 		instWriteFmt(inst, `chat direct %s %s`, msgb64pubkey, "If you would like to become a part of Autohoster moderation team, feel free to contact us: https://wz2100-autohost.net/about#contact")
 	}
-	if msgtype == "WZCHATCMD" && (strings.HasPrefix(string(msgcontent), "/rl")) {
-		if msghash == "aa8519279495c1e8e6f1603aa31c01796d4eeae46e4a81e666404aea0064371d" {
-			ratelimitChatLock.Lock()
-			for k, v := range ratelimitChatPenalties {
-				instWriteFmt(inst, `chat direct %s %s`, msgb64pubkey, fmt.Sprintf("penalty %q for %s", k, v))
-			}
-			for k, v := range ratelimitChatData {
-				instWriteFmt(inst, `chat direct %s %s`, msgb64pubkey, fmt.Sprintf("data %q for %d", k, v.Len()))
-			}
-			ratelimitChatLock.Unlock()
-		}
-	}
 	if msgtype == "WZCHATLOB" {
 		rlcDuration, rlcExceeded := ratelimitChatHandleMessage(inst, msgip)
 		if rlcExceeded {
