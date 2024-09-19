@@ -400,7 +400,7 @@ func messageHandlerProcessChat(inst *instance, msg string) bool {
 			ratelimitChatLock.Unlock()
 		}
 	}
-	if msgtype == "WZCHATLOB" {
+	if msgtype == "WZCHATLOB" && !strings.HasPrefix(string(msgcontent), "/hostmsg ") {
 		rlcDuration, rlcExceeded := ratelimitChatHandleMessage(inst, msgip)
 		if rlcExceeded {
 			instWriteFmt(inst, `set chat quickchat %s`, msgb64pubkey)
