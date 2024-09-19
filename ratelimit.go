@@ -120,7 +120,6 @@ func _ratelimitCleanup() {
 	maps.DeleteFunc(ratelimitChatData, func(k string, v *list.List) bool {
 		return _ratelimitPruneList(v, time.Hour)
 	})
-	ratelimitLastCleanup = time.Now()
 }
 
 func _ratelimitPruneList(l *list.List, ct time.Duration) bool {
