@@ -44,7 +44,7 @@ func generateInstance(instcfg lac.Conf) (inst *instance, err error) {
 	inst.cfgs = []lac.Conf{
 		inst.cfg.DupSubTree("maps", inst.Settings.MapName),
 		inst.cfg,
-		cfg.DupSubTree("settingsFallback"),
+		cfg.LinkSubTree("settingsFallback"),
 	}
 
 	inst.RestoreCfgs = []map[string]any{}
