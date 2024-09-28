@@ -8,11 +8,16 @@ import (
 	"net"
 	"slices"
 	"strconv"
+	"strings"
 	"sync"
 	"time"
 
 	"github.com/jackc/pgx/v4"
 	"github.com/maxsupermanhd/lac/v2"
+)
+
+var (
+	rejectContactMsg = "You can contact Autohoster administration to appeal or get additional information: https://wz2100-autohost.net/about#contact\\n\\n"
 )
 
 // approve approvespec reject ban
@@ -21,18 +26,17 @@ func joinCheck(inst *instance, ip string, name string, pubkey []byte, pubkeyB64 
 	jd.Messages = []string{}
 	jd.AllowChat = true
 	action = joinCheckActionLevelApprove
-	contactmsg := "You can contact Autohoster administration to appeal or get additional information: https://wz2100-autohost.net/about#contact\\n\\n"
 
 	// stage 1 adolf/spam protection
-	if stringContainsSlices(name, tryCfgGetD(tryGetSliceStringGen("blacklist", "name"), []string{}, inst.cfgs...)) {
-		ecode, err := DbLogAction("%d [adolfmeasures] Join name %s triggered adolf suppression system", inst.Id, name)
+	if stringContainsSlices(strings.ToLower(name), tryCfgGetD(tryGetSliceStringGen("blacklist", "name"), []string{}, inst.cfgs...)) {
+		ecode, err := DbLogAction("%d [adolfmeasures] Join name %s triggered adolf suppression system, ip was %s", inst.Id, name, ip)
 		if err != nil {
 			inst.logger.Printf("Failed to log action in database: %s", err.Error())
 		}
 		return jd, joinCheckActionLevelBan, "You were banned from joining Autohoster.\\n" +
 			"Ban reason: 4.1.7. Any manifestations of Nazism, nationalism, incitement " +
 			"of interracial, interethnic, interfaith discord and hostility, " +
-			"calls for the overthrow of the government by force.\\n\\n" + contactmsg +
+			"calls for the overthrow of the government by force.\\n\\n" + rejectContactMsg +
 			"Event ID: " + ecode
 	}
 
@@ -69,7 +73,7 @@ limit 1`, pubkey).Scan(&account, &banid, &banissued, &banexpires, &banexpired, &
 					banexpiresstr = (*banexpires).String()
 				}
 				return jd, joinCheckActionLevelReject, "You were banned from joining Autohoster.\\n" +
-					"Ban reason: " + *banreason + "\\n\\n" + contactmsg +
+					"Ban reason: " + *banreason + "\\n\\n" + rejectContactMsg +
 					"Ban issued: " + (*banissued).String() + "\\n" +
 					"Ban expires: " + banexpiresstr + "\\n" +
 					"Event ID: M-" + strconv.Itoa(*banid)

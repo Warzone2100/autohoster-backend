@@ -162,6 +162,37 @@ var (
 		},
 	}, {
 		match:   hosterMessageMatchTypePrefix,
+		mPrefix: "WZEVENT: player identity UNVERIFIED: ",
+		fn: func(inst *instance, msg string) bool {
+			var msgidx, msgb64pubkey, msghash, msgb64name, msgip string
+			i, err := fmt.Sscanf(msg, "WZEVENT: player identity UNVERIFIED: %s %s %s %s %s", &msgidx, &msgb64pubkey, &msghash, &msgb64name, &msgip)
+			if err != nil || i != 5 {
+				inst.logger.Printf("Failed to parse identity unverified message: %v", err)
+				return true
+			}
+			var msgname []byte
+			err = base64DecodeFields(
+				msgb64name, &msgname,
+			)
+			if err != nil {
+				inst.logger.Printf("Failed to decode base64 name: %s", err.Error())
+				return true
+			}
+			if stringContainsSlices(strings.ToLower(string(msgname)), tryCfgGetD(tryGetSliceStringGen("blacklist", "name"), []string{}, inst.cfgs...)) {
+				ecode, err := DbLogAction("%d [adolfmeasures] Identity UNVERIFIED name %s triggered adolf suppression system, ip was %s", inst.Id, string(msgname), msgip)
+				if err != nil {
+					inst.logger.Printf("Failed to log action in database: %s", err.Error())
+				}
+				instWriteFmt(inst, `ban ip %s %s`, msgip, "You were banned from joining Autohoster.\\n"+
+					"Ban reason: 4.1.7. Any manifestations of Nazism, nationalism, incitement "+
+					"of interracial, interethnic, interfaith discord and hostility, "+
+					"calls for the overthrow of the government by force.\\n\\n"+rejectContactMsg+
+					"Event ID: "+ecode)
+			}
+			return false
+		},
+	}, {
+		match:   hosterMessageMatchTypePrefix,
 		mPrefix: "WZEVENT: movedPlayerToSpec: ",
 		fn: func(inst *instance, msg string) bool {
 			// WZEVENT: movedPlayerToSpec: 5 -> 16 WMy35N3raEEEgOt3stR62BRvP8E8osfNSiMZOCw5SqU= 0e308437d20db97d110ceecc448d39517b47deb7cbb7fe0338f4308f2619d483 V Qm9kbWluIEJlYXN0
@@ -364,9 +395,9 @@ func messageHandlerProcessChat(inst *instance, msg string) bool {
 		inst.logger.Printf("Failed to decode base64 wzcmd parameter: %s", err.Error())
 		return true
 	}
-	if stringContainsSlices(string(msgname), tryCfgGetD(tryGetSliceStringGen("blacklist", "name"), []string{}, inst.cfgs...)) ||
-		stringContainsSlices(string(msgcontent), tryCfgGetD(tryGetSliceStringGen("blacklist", "message"), []string{}, inst.cfgs...)) {
-		ecode, err := DbLogAction("%d [adolfmeasures] Message from %q triggered adolf suppression system (message was %q)", inst.Id, msgb64name, msgb64content)
+	if stringContainsSlices(strings.ToLower(string(msgname)), tryCfgGetD(tryGetSliceStringGen("blacklist", "name"), []string{}, inst.cfgs...)) ||
+		stringContainsSlices(strings.ToLower(string(msgcontent)), tryCfgGetD(tryGetSliceStringGen("blacklist", "message"), []string{}, inst.cfgs...)) {
+		ecode, err := DbLogAction("%d [adolfmeasures] Message from %q triggered adolf suppression system (message was %q), ip was %s", inst.Id, msgb64name, msgb64content, msgip)
 		if err != nil {
 			inst.logger.Printf("Failed to log action in database: %s", err.Error())
 		}
