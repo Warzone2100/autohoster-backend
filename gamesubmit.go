@@ -222,6 +222,30 @@ func sendReplayToStorage(inst *instance) {
 		inst.logger.Printf("Failed to copy replay: %s", err.Error())
 		discordPostError("Failed to copy replay: %s (instance %d)", err.Error(), inst.Id)
 	}
+	err = saveReplayToDatabase(inst, replayPath)
+	if err != nil {
+		inst.logger.Printf("Failed to save replay to database: %s", err.Error())
+		discordPostError("Failed to save replay to database: %s (instance %d)", err.Error(), inst.Id)
+	}
+}
+
+func saveReplayToDatabase(inst *instance, p string) error {
+	rplBytes, err := os.ReadFile(p)
+	if err != nil {
+		return err
+	}
+	rplCompressed, err := zstd.CompressLevel(nil, rplBytes, zstd.BestCompression)
+	if err != nil {
+		return err
+	}
+	tag, err := dbpool.Exec(context.Background(), `update games set replay = $1 where id = $2`, rplCompressed, inst.GameId)
+	if err != nil {
+		return err
+	}
+	if !tag.Update() || tag.RowsAffected() != 1 {
+		return fmt.Errorf("sus tag: %s", tag.String())
+	}
+	return nil
 }
 
 func copyReplayToStorage(inst *instance, p string) error {
