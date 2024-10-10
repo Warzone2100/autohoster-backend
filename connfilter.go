@@ -170,6 +170,19 @@ where g.game_time < 60000 and g.time_started + $1::interval > now() and (i.pkey 
 		}
 	}
 
+	// stage 6 terminated account
+	var terminated bool
+	dbpool.QueryRow(context.Background(), `select terminated
+from accounts as a
+join identities as i on i.account = a.id
+where i.pkey = $1`, pubkey).Scan(&terminated)
+	if terminated {
+		if action == joinCheckActionLevelApprove {
+			jd.Messages = append(jd.Messages, "You not allowed to participate in the game because your account was terminated. Contact administration for more details.")
+			action = joinCheckActionLevelApproveSpec
+		}
+	}
+
 	inst.logger.Printf("connfilter resolved key %v nljoin %v (acc %v) nlplay %v (action %v) nlchat %v (allowed %v)",
 		pubkeyB64,
 		allowNonLinkedJoin, account,
