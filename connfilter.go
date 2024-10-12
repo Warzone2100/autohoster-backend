@@ -165,8 +165,17 @@ where g.game_time < 60000 and g.time_started + $1::interval > now() and (i.pkey 
 
 	// stage 7 ip based mute
 	if account == nil {
-		if checkIPmuted(inst, ip) {
+		if checkIPMatchesConfigs(inst, ip, "ipmute") {
 			jd.AllowChat = false
+		}
+	}
+
+	// stage 7 ip based playfilter
+	if account == nil {
+		if checkIPMatchesConfigs(inst, ip, "ipnoplay") {
+			if action == joinCheckActionLevelApprove {
+				action = joinCheckActionLevelApproveSpec
+			}
 		}
 	}
 
@@ -193,45 +202,45 @@ where i.pkey = $1`, pubkey).Scan(&terminated)
 	return jd, action, ""
 }
 
-func checkIPmuted(inst *instance, ip string) bool {
+func checkIPMatchesConfigs(inst *instance, ip string, confpath ...string) bool {
 	clip := net.ParseIP(ip)
 	if clip == nil {
-		inst.logger.Printf("ipmute invalid ip %q", ip)
+		inst.logger.Printf("ipmatch invalid ip %q", ip)
 		return false
 	}
-	ipmutes := map[string]bool{}
+	ipmatchs := map[string]bool{}
 	for i := len(inst.cfgs) - 1; i >= 0; i-- {
-		o, ok := inst.cfgs[i].GetKeys("ipmute")
+		o, ok := inst.cfgs[i].GetKeys(confpath...)
 		if !ok {
 			continue
 		}
 		for _, k := range o {
-			s, ok := inst.cfgs[i].GetBool("ipmute", k)
+			s, ok := inst.cfgs[i].GetBool(append(confpath, k)...)
 			if !ok {
 				continue
 			}
 			if !s {
-				delete(ipmutes, k)
+				delete(ipmatchs, k)
 			} else {
-				ipmutes[k] = s
+				ipmatchs[k] = s
 			}
 		}
 	}
-	for kip, v := range ipmutes {
+	for kip, v := range ipmatchs {
 		if !v {
 			continue
 		}
 		_, pnt, err := net.ParseCIDR(kip)
 		if err != nil {
-			inst.logger.Printf("ipmute ip %q is not in CIDR notation: %s", kip, err)
+			inst.logger.Printf("ipmatch ip %q is not in CIDR notation: %s", kip, err)
 			continue
 		}
 		if pnt == nil {
-			inst.logger.Printf("ipmute ip %q has no network after parsing", kip)
+			inst.logger.Printf("ipmatch ip %q has no network after parsing", kip)
 			continue
 		}
 		if pnt.Contains(clip) {
-			inst.logger.Printf("ipmute applied to client %q with rule %q", ip, kip)
+			inst.logger.Printf("ipmatch applied to client %q with rule %q", ip, kip)
 			return true
 		}
 	}
