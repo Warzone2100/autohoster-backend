@@ -86,11 +86,6 @@ func discordSendErrorWithContent(webhookUrl, content string) {
 func discordSendErrorWithFile(webhookUrl, content string) {
 	payload_json, err := json.Marshal(map[string]interface{}{
 		"username": "Backend",
-		"attachments": []map[string]any{{
-			"id":          0,
-			"description": "big content",
-			"filename":    "msg.txt",
-		}},
 	})
 	if err != nil {
 		log.Println("Error marshling webhook json:", err)
